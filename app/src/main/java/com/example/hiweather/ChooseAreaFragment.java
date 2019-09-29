@@ -105,10 +105,24 @@ public class ChooseAreaFragment extends Fragment {
                 }else if (currentLevel == LEVEL_COUNTY){
                     // 判断当前级别，如果是LEVEL_COUNTY，就启动WeatherActivity,传入天气id
                     String weatherId = countyList.get(position).getWeatherId();
-                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
-                    intent.putExtra("weather_id", weatherId);
-                    startActivity(intent);
-                    getActivity().finish();
+                    if (getActivity() instanceof MainActivity){
+                        // 判断一个对象是类的实例，在碎片中调用getActivity()方法
+                        // 碎片在MainActivity中，
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                        intent.putExtra("weather_id", weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if (getActivity() instanceof WeatherActivity){
+                        // 碎片在WeatherActivity中
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        // 关闭滑动菜单
+                        activity.drawerLayout.closeDrawers();
+                        // 显示下拉刷新进度条
+                        activity.swipeRefresh.setRefreshing(true);
+                        // 请求城市信息
+                        activity.requestWeather(weatherId);
+                    }
+
                 }
             }
         });
@@ -138,7 +152,7 @@ public class ChooseAreaFragment extends Fragment {
         // 调用litepal的查询接口，从数据库中读取省级数据
         provinceList = DataSupport.findAll(Province.class);
         if( provinceList.size() > 0 ){
-            Log.d("provinceList", "queryProvinces: 1");
+            Log.d("provinceList", "queryProvinces: 调用if");
             // 取到数据
             // 清空dataList
             dataList.clear();
@@ -152,7 +166,7 @@ public class ChooseAreaFragment extends Fragment {
         }else{
             Log.d("provinceList", "queryProvinces: 2");
             // 没取到，就调用queryFromServer()从服务器上查询数据
-            String address = "http://guolin.tech/api/china/16";
+            String address = "http://guolin.tech/api/china";
             queryFromServer(address, "province");
         }
     }
@@ -166,7 +180,7 @@ public class ChooseAreaFragment extends Fragment {
         backButton.setVisibility(View.VISIBLE);
         cityList = DataSupport.where("provinceid = ?", String.valueOf(
                 selectedProvince.getId())).find(City.class);
-        if (cityList.size()>0){
+        if (cityList.size() > 0){
             dataList.clear();
             for (City city : cityList){
                 dataList.add(city.getCityName());
@@ -177,7 +191,7 @@ public class ChooseAreaFragment extends Fragment {
         }else{
             // 没取到，就调用queryFromServer()从服务器上查询数据
             int provinceCode = selectedProvince.getProvinceCode();
-            String address = "http://guolin.tech/api/china" + provinceCode;
+            String address = "http://guolin.tech/api/china/" + provinceCode;   // 少了个“/”，错误
             queryFromServer(address, "city");
         }
     }
@@ -190,24 +204,30 @@ public class ChooseAreaFragment extends Fragment {
         // 返回按钮可见,
         backButton.setVisibility(View.VISIBLE);
         countyList = DataSupport.where("cityid = ?", String.valueOf(selectedCity.getId())).find(County.class);
-        if (countyList.size()>0){
+        if (countyList.size() > 0){
             dataList.clear();
             for (County county : countyList){
                 dataList.add(county.getCountyName());
             }
             adapter.notifyDataSetChanged();
             listView.setSelection(0);
-            currentLevel = LEVEL_CITY;
+            currentLevel = LEVEL_COUNTY;        // 错误
         }else {
             int provinceCode = selectedProvince.getProvinceCode();
             int cityCode = selectedCity.getCityCode();
-            String address = "http://guolin.tech/api/china" + provinceCode + "/" + cityCode;
+            String address = "http://guolin.tech/api/china/" + provinceCode + "/" + cityCode;    // 错误
             queryFromServer(address, "county");
         }
     }
 
     /**
      * 根据传入的地址和类型从服务器上查询省市县数据
+     * queryFromServer（）向服务器发送请求，响应数据会回调到onResponse() 方法中
+     * 调用Utility的handleProvinceResponse（）方法解析和处理服务器返回的数据，存储到数据库中
+     * 再次调用queryProvinces（）方法，重新加载省数据
+     * queryProvinces（）方法 有UI操作，需要在主线程调用，借助runOnUiThread（）实现从子线程切换到主线程
+     * 此时数据库已经存在了数据，调用queryProvinces（）方法就会将数据显示到界面上
+     * 到了省，就会进入ListView的
      */
     private void queryFromServer(String address, final String type){
         // 进度显示
@@ -220,7 +240,7 @@ public class ChooseAreaFragment extends Fragment {
                 getActivity().runOnUiThread(new Runnable(){
                     @Override
                     public void run(){
-//                        closeProgressDialog();
+//                        closeProgressDialog();     // 直接进入到这儿，所以没有看到加载的进度显示条
                         // toast信息
                         Toast.makeText(getContext(), "加载失败",Toast.LENGTH_SHORT).show();
                     }
@@ -240,11 +260,12 @@ public class ChooseAreaFragment extends Fragment {
                 }
 
                 if (result){
+                    // 通过runOnUiThread()方法回到主线程处理逻辑
                     getActivity().runOnUiThread(new Runnable(){
                         @Override
                         public void run(){
                             closeProgressDialog();
-                            if ("province".equals(type)){
+                            if ("province".equals(type)){       // type是啥？
                                 queryProvinces();
                             }else if ("city".equals(type)){
                                 queryCities();

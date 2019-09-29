@@ -2,9 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:layout_margin="15dp">
 
+    <!--两个TextView，显示当前气温和天气情况-->
     <TextView
         android:id="@+id/degree_text"
         android:layout_width="wrap_content"
@@ -12,6 +13,8 @@
         android:layout_gravity="end"
         android:textColor="#fff"
         android:textSize="60sp"/>
+
+    <!--红色  #FF0000   灰色 #fff-->
 
     <TextView
         android:id="@+id/weather_info_text"

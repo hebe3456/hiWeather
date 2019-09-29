@@ -1,14 +1,14 @@
 package com.example.hiweather.util;
 
+// 用於解析處理數據
 import android.text.TextUtils;   //
+import android.util.Log;
 
 import com.example.hiweather.db.Province;
 import com.example.hiweather.db.City;
 import com.example.hiweather.db.County;
 import com.example.hiweather.gson.Weather;
 import com.google.gson.Gson;
-
-
 import org.json.JSONArray;    //
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,12 +22,14 @@ public class Utility {
             try{
                 // 实例化 JSONArray
                 JSONArray allProvinces = new JSONArray(response);
-                for (int i=0; i<allProvinces.length(); i++){
+                for (int i=0; i < allProvinces.length(); i++){
                     // 实例化
                     JSONObject provinceObject = allProvinces.getJSONObject(i);
+                    // 解析数据，组装成实体类对象
                     Province province = new Province();
                     province.setProvinceName(provinceObject.getString("name"));
                     province.setProvinceCode(provinceObject.getInt("id"));
+                    // 存到数据库
                     province.save();
                 }
                 return true;   // true
@@ -46,7 +48,7 @@ public class Utility {
         if(!TextUtils.isEmpty(response)){
             try{
                 JSONArray allCities = new JSONArray(response);
-                for (int i=0; i<allCities.length(); i++){
+                for (int i=0; i < allCities.length(); i++){
                     JSONObject cityObject = allCities.getJSONObject(i);
                     City city = new City();
                     city.setCityName(cityObject.getString("name"));
@@ -92,8 +94,14 @@ public class Utility {
         try{
             // 通过 JSONObject JSONArray 解析天气数据中的主体内容
             JSONObject jsonObject = new JSONObject(response);
+            Log.d("JSON", "handleWeatherResponse jsonObject: " + jsonObject);
             JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
+            Log.d("JSON", "handleWeatherResponse: jsonArray" + jsonArray);
+
+            // 返回的json格式数据的key是"HeWeather"
             String weatherContent = jsonArray.getJSONObject(0).toString();
+            Log.d("JSON", "handleWeatherResponse: weatherContent" + weatherContent);
+
             return new Gson().fromJson(weatherContent, Weather.class);
         }catch (Exception e){
             e.printStackTrace();
@@ -101,3 +109,5 @@ public class Utility {
         return null;
     }
 }
+
+

@@ -3,7 +3,7 @@
 android:orientation="vertical"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
-android:background="#fff">
+android:background="#8000">
 
 <RelativeLayout
     android:layout_width="match_parent"
@@ -31,6 +31,6 @@ android:background="#fff">
 <ListView
     android:id="@+id/list_view"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"/>     <!--lsitview里显示省市县数据-->
+    android:layout_height="match_parent" />     <!--lsitview里显示省市县数据-->
 
 </LinearLayout>
